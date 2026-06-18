@@ -1,0 +1,5 @@
+# .gitignore
+firebase-config.js
+*.log
+.DS_Store
+node_modules/
