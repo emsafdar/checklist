@@ -1,5 +1,3 @@
-// firebase-config.js
-// DO NOT commit this file to GitHub!
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCWeyOk-eE4VyQ4nhDhf2BsIwc3oCLfgGw",
   authDomain: "fvic-visa-checklist.firebaseapp.com",
