@@ -102,5 +102,7 @@ const DOCUMENTS_LIST = [
   "Accident Report",
   "Fire Safety Certificate",
   "Building Approval",
-  "Environmental Clearance"
+  "Environmental Clearance",
+  "Visa Fee",
+  "Service Charges"
 ];
