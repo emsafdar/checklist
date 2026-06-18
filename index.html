@@ -189,9 +189,6 @@
     .box.hidden {
       display: none;
     }
-    .doc-list {
-      margin-top: 12px;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -331,9 +328,12 @@
       padding: 12px;
       border-top: 1px dashed #d0d8e0;
       margin-top: 12px;
-      display: flex;
+      display: none;
       gap: 8px;
       align-items: center;
+    }
+    .add-new-section.active {
+      display: flex;
     }
     .add-new-section input {
       flex: 1;
@@ -345,19 +345,6 @@
     .add-new-section input:focus {
       outline: none;
       border-color: #1e293b;
-    }
-    .loading-spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #e9edf2;
-      border-top: 3px solid #1e293b;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
     @media print {
       .no-print { display: none !important; }
@@ -394,6 +381,7 @@
     <button class="btn btn-info" onclick="showDocumentSelector()">📄 Add document from list</button>
     <button class="btn btn-success" onclick="addNewDocument()">➕ Add custom doc</button>
     <button class="btn btn-outline" onclick="resetAll()">⟲ Clear selection</button>
+    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear all data</button>
   </div>
 
   <div class="grid-3" id="mainGrid">
@@ -421,7 +409,7 @@
     <h3 id="modalTitle">Select Item</h3>
     <input type="text" class="modal-search" id="modalSearch" placeholder="🔍 Search..." oninput="filterModalItems()">
     <div class="modal-list-container" id="modalList"></div>
-    <div class="add-new-section" id="addNewSection" style="display:none;">
+    <div class="add-new-section" id="addNewSection">
       <input type="text" id="newItemInput" placeholder="Enter new item name...">
       <button class="btn btn-success btn-sm" onclick="addNewItemFromModal()">➕ Add</button>
     </div>
@@ -435,6 +423,9 @@
 <script src="categories.js"></script>
 <script src="documents.js"></script>
 
+<!-- Firebase Config -->
+<script src="firebase-config.js"></script>
+
 <!-- Firebase SDK -->
 <script type="importmap">
 {
@@ -446,12 +437,9 @@
 </script>
 
 <script type="module">
-// ---------- FIREBASE CONFIG ----------
+// ---------- FIREBASE IMPORTS ----------
 import { initializeApp } from "firebase";
 import { getDatabase, ref, set, get, onValue, push, remove, update } from "firebase/database";
-
-<!-- Firebase Config - Load from external file -->
-<script src="firebase-config.js"></script>
 
 // Initialize Firebase
 const app = initializeApp(FIREBASE_CONFIG);
@@ -649,14 +637,14 @@ window.showModal = function(title, items, selectedItems, callback, type = '') {
   newItemInput.value = '';
   
   if (type === 'category' || type === 'country') {
-    addNewSection.style.display = 'flex';
+    addNewSection.classList.add('active');
     if (type === 'category') {
       newItemInput.placeholder = 'Enter new category name...';
     } else if (type === 'country') {
       newItemInput.placeholder = 'Enter new country name...';
     }
   } else {
-    addNewSection.style.display = 'none';
+    addNewSection.classList.remove('active');
   }
   
   items.forEach(item => {
@@ -755,6 +743,11 @@ window.showCountrySelector = function() {
   const existingCountries = Object.keys(visaData);
   const availableCountries = COUNTRIES_LIST.filter(c => !existingCountries.includes(c));
   
+  if (availableCountries.length === 0) {
+    alert('All countries from the list have been added!');
+    return;
+  }
+  
   window.showModal(
     'Select a country to add:',
     availableCountries,
@@ -782,6 +775,11 @@ window.showCategorySelector = function() {
   
   const existingCategories = Object.keys(visaData[selectedCountry]);
   const availableCategories = VISA_CATEGORIES.filter(c => !existingCategories.includes(c));
+  
+  if (availableCategories.length === 0) {
+    alert('All categories from the list have been added to this country!');
+    return;
+  }
   
   window.showModal(
     `Select a category to add to ${selectedCountry}:`,
