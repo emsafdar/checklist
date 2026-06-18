@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visa Manager · complete</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+      background: #f4f7fb;
+      padding: 24px;
+      color: #1e293b;
+    }
+    .app-wrapper {
+      max-width: 1500px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 28px;
+      padding: 28px 32px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+    }
+    h2 {
+      font-weight: 600;
+      font-size: 1.9rem;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #e9edf2;
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .btn {
+      background: white;
+      border: 1px solid #d0d8e0;
+      padding: 8px 18px;
+      border-radius: 40px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: #1e293b; color: white; border-color: #1e293b; }
+    .btn-primary:hover { background: #0f172a; }
+    .btn-outline { background: transparent; border: 1px solid #cbd5e1; }
+    .btn-outline:hover { background: #f1f5f9; }
+    .btn-print { background: #f8fafc; border-color: #94a3b8; }
+    .btn-print:hover { background: #e2e8f0; }
+    .btn-danger { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: #dcfce7; border-color: #86efac; color: #166534; }
+    .btn-success:hover { background: #bbf7d0; }
+    .btn-warning { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+    .btn-warning:hover { background: #fef08a; }
+    .btn-info { background: #dbeafe; border-color: #93c5fd; color: #1e3a8a; }
+    .btn-info:hover { background: #bfdbfe; }
+    .btn-sm { padding: 4px 12px; font-size: 0.8rem; }
+    .btn-icon { background: transparent; border: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+    .btn-icon:hover { background: #eef2f6; }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .panel {
+      background: #fafcff;
+      border-radius: 18px;
+      padding: 6px 0 10px 0;
+    }
+    .panel h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #475569;
+      padding: 0 8px 12px 8px;
+      border-bottom: 1px solid #e6edf5;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel h3 .small-action {
+      font-weight: 400;
+      font-size: 0.7rem;
+      background: #eef2f6;
+      padding: 2px 12px;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: 0.1s;
+      text-transform: none;
+      color: #1e293b;
+    }
+    .panel h3 .small-action:hover { background: #dce3ec; }
+    
+    .search-box {
+      margin: 8px;
+      padding: 8px 12px;
+      border: 1px solid #e9edf2;
+      border-radius: 40px;
+      width: calc(100% - 16px);
+      font-size: 0.9rem;
+      background: white;
+      transition: 0.2s;
+    }
+    .search-box:focus {
+      outline: none;
+      border-color: #1e293b;
+      box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
+    }
+    
+    .box {
+      background: white;
+      padding: 12px 16px;
+      margin: 6px 8px;
+      border-radius: 14px;
+      border: 1px solid #e9edf2;
+      cursor: grab;
+      transition: 0.1s;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .box:hover { background: #f1f6fd; border-color: #b7c9dd; }
+    .box.active { background: #e6effa; border-color: #1e293b; }
+    .box.dragging {
+      opacity: 0.4;
+      border-style: dashed;
+      border-color: #1e293b;
+    }
+    .box.drag-over {
+      border-color: #1e293b;
+      border-width: 2px;
+      background: #e6effa;
+      transform: scale(1.02);
+    }
+    .box .badge {
+      background: #e9edf2;
+      font-size: 0.7rem;
+      padding: 2px 12px;
+      border-radius: 40px;
+      font-weight: 400;
+      color: #334155;
+    }
+    .box .drag-handle {
+      cursor: grab;
+      color: #94a3b8;
+      margin-right: 8px;
+      font-size: 1.1rem;
+    }
+    .box .country-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .box.hidden {
+      display: none;
+    }
+    .doc-list {
+      margin-top: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    th {
+      background: #f1f6fa;
+      color: #1e293b;
+      font-weight: 600;
+      padding: 12px 8px;
+      border-bottom: 2px solid #dce3ec;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #eef2f6;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr.dragging {
+      opacity: 0.4;
+    }
+    tr.drag-over td {
+      border-bottom: 3px solid #1e293b;
+    }
+    tr.hidden {
+      display: none;
+    }
+    .action-group {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .empty-state {
+      padding: 30px 10px;
+      text-align: center;
+      color: #94a3b8;
+      font-style: italic;
+    }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .mt-2 { margin-top: 16px; }
+    .mb-1 { margin-bottom: 6px; }
+    .print-hide { }
+    .footnote {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-left: 4px solid #1e293b;
+      font-size: 0.85rem;
+      color: #334155;
+      border-radius: 4px;
+    }
+    .footnote strong { color: #0f172a; }
+    .drag-handle-cell {
+      cursor: grab;
+      color: #94a3b8;
+      font-size: 1.1rem;
+      text-align: center;
+      width: 30px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-content h3 {
+      margin-bottom: 16px;
+      border-bottom: 2px solid #e9edf2;
+      padding-bottom: 12px;
+    }
+    .modal-search {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d0d8e0;
+      border-radius: 40px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+    .modal-search:focus {
+      outline: none;
+      border-color: #1e293b;
+      box-shadow: 0 0 0 3px rgba(30,41,59,0.1);
+    }
+    .modal-list-container {
+      max-height: 350px;
+      overflow-y: auto;
+    }
+    .modal-content .modal-item {
+      padding: 8px 12px;
+      margin: 4px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.1s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-content .modal-item:hover {
+      background: #f1f6fd;
+    }
+    .modal-content .modal-item.selected {
+      background: #e6effa;
+      border-left: 3px solid #1e293b;
+    }
+    .modal-content .modal-item.hidden {
+      display: none;
+    }
+    .modal-content .modal-item .add-btn {
+      background: #dcfce7;
+      padding: 2px 12px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      justify-content: flex-end;
+      border-top: 1px solid #e9edf2;
+      padding-top: 16px;
+    }
+    .clear-search {
+      position: absolute;
+      right: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #94a3b8;
+      padding: 4px 8px;
+      border-radius: 50%;
+      background: #f1f5f9;
+    }
+    .clear-search:hover { background: #e2e8f0; }
+    .search-wrapper {
+      position: relative;
+    }
+    .add-new-section {
+      padding: 12px;
+      border-top: 1px dashed #d0d8e0;
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .add-new-section input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #d0d8e0;
+      border-radius: 40px;
+      font-size: 0.9rem;
+    }
+    .add-new-section input:focus {
+      outline: none;
+      border-color: #1e293b;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-hide { display: none !important; }
+      .grid-3 { display: block; }
+      .panel { border: none; padding: 0; }
+      .box { border: 1px solid #ccc; }
+      body { background: white; padding: 0.5in; }
+      .app-wrapper { box-shadow: none; padding: 10px; }
+      .action-group { display: none; }
+      .btn { display: none; }
+      .drag-handle, .drag-handle-cell { display: none !important; }
+      .search-box { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrapper" id="appWrapper">
+  <h2>
+    <span>🛂 Visa Requirements</span>
+    <span class="no-print">
+      <button class="btn btn-print" onclick="printListView()">🖨️ Print list</button>
+      <button class="btn btn-outline" onclick="resetAll()">🏠 Home / clear</button>
+    </span>
+  </h2>
+
+  <div class="toolbar no-print">
+    <button class="btn btn-primary" onclick="showCountrySelector()">🌍 Add country from list</button>
+    <button class="btn btn-warning" onclick="showCategorySelector()">📁 Add category from list</button>
+    <button class="btn btn-info" onclick="showDocumentSelector()">📄 Add document from list</button>
+    <button class="btn btn-success" onclick="addNewDocument()">➕ Add custom doc</button>
+    <button class="btn btn-outline" onclick="resetAll()">⟲ Clear selection</button>
+    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear all data</button>
+  </div>
+
+  <div class="grid-3" id="mainGrid">
+    <div class="panel" id="countriesPanel">
+      <h3>🌍 Countries <span class="small-action" onclick="showCountrySelector()">+ add from list</span></h3>
+      <input type="text" class="search-box" id="countrySearch" placeholder="🔍 Search countries..." oninput="filterCountries()">
+      <div id="countries"></div>
+    </div>
+    <div class="panel" id="categoriesPanel">
+      <h3>📂 Categories <span class="small-action" onclick="showCategorySelector()">+ add from list</span></h3>
+      <input type="text" class="search-box" id="categorySearch" placeholder="🔍 Search categories..." oninput="filterCategories()">
+      <div id="categories"></div>
+    </div>
+    <div class="panel" id="docsPanel">
+      <h3>📄 Documents <span id="docContext" style="font-weight:400;font-size:0.8rem;color:#64748b;"></span></h3>
+      <input type="text" class="search-box" id="documentSearch" placeholder="🔍 Search documents..." oninput="filterDocuments()">
+      <div id="docs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for selecting from lists -->
+<div class="modal" id="selectorModal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Select Item</h3>
+    <input type="text" class="modal-search" id="modalSearch" placeholder="🔍 Search..." oninput="filterModalItems()">
+    <div class="modal-list-container" id="modalList"></div>
+    <div class="add-new-section" id="addNewSection" style="display:none;">
+      <input type="text" id="newItemInput" placeholder="Enter new item name...">
+      <button class="btn btn-success btn-sm" onclick="addNewItemFromModal()">➕ Add</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="countries.js"></script>
+<script src="categories.js"></script>
+<script src="documents.js"></script>
+<script>
+// ---------- DATA PERSISTENCE ----------
+const STORAGE_KEY = 'visaRequirementsData';
+
+// Default initial data
+function getDefaultData() {
+  const defaultData = {};
+  const sampleCountries = ["Germany", "Canada", "United States", "United Kingdom", "Australia"];
+  sampleCountries.forEach(country => {
+    defaultData[country] = {};
+    ["Tourist Visa", "Business Visa"].forEach(cat => {
+      defaultData[country][cat] = [
+        { name: "Passport Copy", validity: "6 months", mofa: "No", apostille: "No", translation: "Yes" },
+        { name: "Bank Statement", validity: "3 months", mofa: "No", apostille: "No", translation: "Yes" }
+      ];
+    });
+  });
+  return defaultData;
+}
+
+// Load data from localStorage or use default
+function loadData() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.warn('Failed to parse stored data, using defaults');
+      return getDefaultData();
+    }
+  }
+  return getDefaultData();
+}
+
+// Save data to localStorage
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ---------- GLOBAL STATE ----------
+let visaData = loadData();
+let selectedCountry = null;
+let selectedCategory = null;
+let modalCallback = null;
+let modalItems = [];
+let modalType = ''; // 'country', 'category', 'document'
+
+// DOM refs
+const countriesDiv = document.getElementById("countries");
+const categoriesDiv = document.getElementById("categories");
+const docsDiv = document.getElementById("docs");
+const docContext = document.getElementById("docContext");
+const modal = document.getElementById("selectorModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalList = document.getElementById("modalList");
+const modalSearch = document.getElementById("modalSearch");
+const addNewSection = document.getElementById("addNewSection");
+const newItemInput = document.getElementById("newItemInput");
+
+// ---------- SEARCH FUNCTIONS ----------
+function filterCountries() {
+  const searchTerm = document.getElementById('countrySearch').value.toLowerCase();
+  const boxes = countriesDiv.querySelectorAll('.box');
+  let hasVisible = false;
+  boxes.forEach(box => {
+    const text = box.textContent.toLowerCase();
+    if (text.includes(searchTerm) || searchTerm === '') {
+      box.classList.remove('hidden');
+      hasVisible = true;
+    } else {
+      box.classList.add('hidden');
+    }
+  });
+  const emptyState = countriesDiv.querySelector('.empty-state');
+  if (emptyState) {
+    if (!hasVisible && boxes.length > 0) {
+      emptyState.style.display = 'block';
+      emptyState.textContent = 'No matching countries found';
+    } else {
+      emptyState.style.display = 'none';
+    }
+  }
+}
+
+function filterCategories() {
+  const searchTerm = document.getElementById('categorySearch').value.toLowerCase();
+  const boxes = categoriesDiv.querySelectorAll('.box');
+  let hasVisible = false;
+  boxes.forEach(box => {
+    const text = box.textContent.toLowerCase();
+    if (text.includes(searchTerm) || searchTerm === '') {
+      box.classList.remove('hidden');
+      hasVisible = true;
+    } else {
+      box.classList.add('hidden');
+    }
+  });
+  const emptyState = categoriesDiv.querySelector('.empty-state');
+  if (emptyState) {
+    if (!hasVisible && boxes.length > 0) {
+      emptyState.style.display = 'block';
+      emptyState.textContent = 'No matching categories found';
+    } else {
+      emptyState.style.display = 'none';
+    }
+  }
+}
+
+function filterDocuments() {
+  const searchTerm = document.getElementById('documentSearch').value.toLowerCase();
+  const rows = docsDiv.querySelectorAll('.doc-row');
+  let hasVisible = false;
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    if (text.includes(searchTerm) || searchTerm === '') {
+      row.classList.remove('hidden');
+      hasVisible = true;
+    } else {
+      row.classList.add('hidden');
+    }
+  });
+  const emptyState = docsDiv.querySelector('.empty-state');
+  if (emptyState) {
+    if (!hasVisible && rows.length > 0) {
+      emptyState.style.display = 'block';
+      emptyState.textContent = 'No matching documents found';
+    } else {
+      emptyState.style.display = 'none';
+    }
+  }
+}
+
+function filterModalItems() {
+  const searchTerm = modalSearch.value.toLowerCase();
+  const items = modalList.querySelectorAll('.modal-item');
+  let hasVisible = false;
+  items.forEach(item => {
+    const text = item.textContent.toLowerCase();
+    if (text.includes(searchTerm) || searchTerm === '') {
+      item.classList.remove('hidden');
+      hasVisible = true;
+    } else {
+      item.classList.add('hidden');
+    }
+  });
+}
+
+// ---------- MODAL FUNCTIONS ----------
+function showModal(title, items, selectedItems, callback, type = '') {
+  modalTitle.textContent = title;
+  modalList.innerHTML = '';
+  modalItems = items;
+  modalType = type;
+  modalSearch.value = '';
+  newItemInput.value = '';
+  
+  // Show/hide add new section based on type
+  if (type === 'category' || type === 'country') {
+    addNewSection.style.display = 'flex';
+    if (type === 'category') {
+      newItemInput.placeholder = 'Enter new category name...';
+    } else if (type === 'country') {
+      newItemInput.placeholder = 'Enter new country name...';
+    }
+  } else {
+    addNewSection.style.display = 'none';
+  }
+  
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'modal-item';
+    if (selectedItems && selectedItems.includes(item)) {
+      div.classList.add('selected');
+    }
+    div.innerHTML = `<span>${item}</span><span style="color:#94a3b8;">+</span>`;
+    div.onclick = () => {
+      if (callback) callback(item);
+      closeModal();
+    };
+    modalList.appendChild(div);
+  });
+  
+  modal.classList.add('active');
+  setTimeout(() => modalSearch.focus(), 100);
+}
+
+function closeModal() {
+  modal.classList.remove('active');
+  modalCallback = null;
+  modalSearch.value = '';
+  newItemInput.value = '';
+}
+
+// Close modal on background click
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeModal();
+});
+
+// Enter key in modal search
+modalSearch.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const firstVisible = modalList.querySelector('.modal-item:not(.hidden)');
+    if (firstVisible) {
+      firstVisible.click();
+    }
+  }
+});
+
+// Enter key in new item input
+newItemInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    addNewItemFromModal();
+  }
+});
+
+function addNewItemFromModal() {
+  const newItem = newItemInput.value.trim();
+  if (!newItem) {
+    alert('Please enter a name.');
+    return;
+  }
+  
+  // Check if item already exists in the list
+  if (modalItems.includes(newItem)) {
+    alert(`"${newItem}" already exists in the list.`);
+    return;
+  }
+  
+  // Add to the appropriate master list
+  if (modalType === 'country') {
+    COUNTRIES_LIST.push(newItem);
+    // Update the modal items
+    modalItems.push(newItem);
+    // Add the item to the modal list
+    addItemToModalList(newItem);
+    newItemInput.value = '';
+    // Trigger the callback to add the country
+    if (modalCallback) {
+      modalCallback(newItem);
+    }
+    closeModal();
+  } else if (modalType === 'category') {
+    VISA_CATEGORIES.push(newItem);
+    modalItems.push(newItem);
+    addItemToModalList(newItem);
+    newItemInput.value = '';
+    if (modalCallback) {
+      modalCallback(newItem);
+    }
+    closeModal();
+  }
+}
+
+function addItemToModalList(item) {
+  const div = document.createElement('div');
+  div.className = 'modal-item';
+  div.innerHTML = `<span>${item}</span><span style="color:#94a3b8;">+</span>`;
+  div.onclick = () => {
+    if (modalCallback) modalCallback(item);
+    closeModal();
+  };
+  modalList.appendChild(div);
+}
+
+// ---------- SELECTOR FUNCTIONS ----------
+function showCountrySelector() {
+  const existingCountries = Object.keys(visaData);
+  const availableCountries = COUNTRIES_LIST.filter(c => !existingCountries.includes(c));
+  
+  showModal(
+    'Select a country to add:',
+    availableCountries,
+    [],
+    (country) => {
+      if (!visaData[country]) {
+        visaData[country] = {};
+        saveData(visaData);
+        selectedCountry = country;
+        selectedCategory = null;
+        renderAll();
+        document.getElementById('countrySearch').value = '';
+        filterCountries();
+      }
+    },
+    'country'
+  );
+}
+
+function showCategorySelector() {
+  if (!selectedCountry) {
+    alert('Please select a country first.');
+    return;
+  }
+  
+  const existingCategories = Object.keys(visaData[selectedCountry]);
+  const availableCategories = VISA_CATEGORIES.filter(c => !existingCategories.includes(c));
+  
+  showModal(
+    `Select a category to add to ${selectedCountry}:`,
+    availableCategories,
+    [],
+    (category) => {
+      if (!visaData[selectedCountry][category]) {
+        visaData[selectedCountry][category] = [];
+        saveData(visaData);
+        selectedCategory = category;
+        renderAll();
+        document.getElementById('categorySearch').value = '';
+        filterCategories();
+      }
+    },
+    'category'
+  );
+}
+
+function showDocumentSelector() {
+  if (!selectedCountry || !selectedCategory) {
+    alert('Please select a country and category first.');
+    return;
+  }
+  
+  const existingDocs = visaData[selectedCountry][selectedCategory].map(d => d.name);
+  const availableDocs = DOCUMENTS_LIST.filter(d => !existingDocs.includes(d));
+  
+  if (availableDocs.length === 0) {
+    alert('All documents from the list have been added to this category!');
+    return;
+  }
+  
+  showModal(
+    `Select a document to add to ${selectedCategory}:`,
+    availableDocs,
+    [],
+    (docName) => {
+      const newDoc = {
+        name: docName,
+        validity: prompt("Validity (e.g. 6 months):") || "—",
+        mofa: prompt("MOFA (Yes/No):") || "No",
+        apostille: prompt("Apostille (Yes/No):") || "No",
+        translation: prompt("Translation (Yes/No):") || "Yes"
+      };
+      visaData[selectedCountry][selectedCategory].push(newDoc);
+      saveData(visaData);
+      renderDocs();
+      renderCategories();
+      document.getElementById('documentSearch').value = '';
+      filterDocuments();
+    },
+    'document'
+  );
+}
+
+// ---------- DRAG AND DROP FOR COUNTRIES AND CATEGORIES ----------
+function setupDragDrop(container, onDrop) {
+  let dragItem = null;
+  
+  container.addEventListener('dragstart', (e) => {
+    const target = e.target.closest('.box');
+    if (!target) return;
+    dragItem = target;
+    target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', target.dataset.index);
+  });
+
+  container.addEventListener('dragend', (e) => {
+    const target = e.target.closest('.box');
+    if (target) target.classList.remove('dragging');
+    document.querySelectorAll('.box.drag-over').forEach(el => el.classList.remove('drag-over'));
+    dragItem = null;
+  });
+
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const target = e.target.closest('.box');
+    if (!target || target === dragItem) return;
+    document.querySelectorAll('.box.drag-over').forEach(el => el.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  });
+
+  container.addEventListener('dragleave', (e) => {
+    const target = e.target.closest('.box');
+    if (target) target.classList.remove('drag-over');
+  });
+
+  container.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const target = e.target.closest('.box');
+    if (!target) return;
+    target.classList.remove('drag-over');
+    
+    if (dragItem && dragItem !== target) {
+      const fromIndex = parseInt(dragItem.dataset.index);
+      const toIndex = parseInt(target.dataset.index);
+      if (!isNaN(fromIndex) && !isNaN(toIndex) && fromIndex !== toIndex) {
+        onDrop(fromIndex, toIndex);
+      }
+    }
+    dragItem = null;
+  });
+}
+
+// ---------- RENDER ----------
+function renderCountries() {
+  countriesDiv.innerHTML = "";
+  const countryKeys = Object.keys(visaData);
+  if (countryKeys.length === 0) {
+    countriesDiv.innerHTML = '<div class="empty-state">No countries. Add from list!</div>';
+    return;
+  }
+  
+  countryKeys.forEach((country, index) => {
+    const div = document.createElement("div");
+    div.className = `box${selectedCountry === country ? ' active' : ''}`;
+    div.dataset.index = index;
+    div.draggable = true;
+    const catCount = Object.keys(visaData[country]).length;
+    div.innerHTML = `
+      <span>
+        <span class="drag-handle">⠿</span>
+        ${country}
+      </span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span class="badge">${catCount} cats</span>
+        <span class="country-actions no-print">
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); editCountryName('${country}')">✎</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteCountry('${country}')">✕</button>
+        </span>
+      </span>
+    `;
+    div.onclick = (e) => { 
+      if (e.target.closest('.country-actions') || e.target.closest('.drag-handle')) return; 
+      selectCountry(country); 
+    };
+    countriesDiv.appendChild(div);
+  });
+  
+  setupDragDrop(countriesDiv, (from, to) => {
+    const keys = Object.keys(visaData);
+    const [moved] = keys.splice(from, 1);
+    keys.splice(to, 0, moved);
+    const reordered = {};
+    keys.forEach(key => { reordered[key] = visaData[key]; });
+    visaData = reordered;
+    saveData(visaData);
+    renderAll();
+  });
+}
+
+function renderCategories() {
+  categoriesDiv.innerHTML = "";
+  if (!selectedCountry || !visaData[selectedCountry]) {
+    categoriesDiv.innerHTML = '<div class="empty-state">Select a country</div>';
+    return;
+  }
+  const catKeys = Object.keys(visaData[selectedCountry]);
+  if (catKeys.length === 0) {
+    categoriesDiv.innerHTML = '<div class="empty-state">No categories. Add from list!</div>';
+    return;
+  }
+  
+  catKeys.forEach((cat, index) => {
+    const div = document.createElement("div");
+    div.className = `box${selectedCategory === cat ? ' active' : ''}`;
+    div.dataset.index = index;
+    div.draggable = true;
+    const count = visaData[selectedCountry][cat].length;
+    div.innerHTML = `
+      <span>
+        <span class="drag-handle">⠿</span>
+        ${cat}
+      </span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span class="badge">${count} docs</span>
+        <span class="no-print" style="display:flex;gap:4px;">
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); editCategoryName('${cat}')">✎</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteCategory('${cat}')">✕</button>
+        </span>
+      </span>
+    `;
+    div.onclick = (e) => { 
+      if (e.target.closest('.no-print') || e.target.closest('.drag-handle')) return; 
+      selectCategory(cat); 
+    };
+    categoriesDiv.appendChild(div);
+  });
+  
+  setupDragDrop(categoriesDiv, (from, to) => {
+    const keys = Object.keys(visaData[selectedCountry]);
+    const [moved] = keys.splice(from, 1);
+    keys.splice(to, 0, moved);
+    const reordered = {};
+    keys.forEach(key => { reordered[key] = visaData[selectedCountry][key]; });
+    visaData[selectedCountry] = reordered;
+    saveData(visaData);
+    renderAll();
+  });
+}
+
+function renderDocs() {
+  docsDiv.innerHTML = "";
+  if (!selectedCountry || !selectedCategory || !visaData[selectedCountry]?.[selectedCategory]) {
+    docContext.innerText = '';
+    docsDiv.innerHTML = '<div class="empty-state">Select a category to see documents</div>';
+    return;
+  }
+  const docs = visaData[selectedCountry][selectedCategory];
+  docContext.innerText = `— ${selectedCountry} / ${selectedCategory}`;
+  if (docs.length === 0) {
+    docsDiv.innerHTML = '<div class="empty-state">No documents. Add from list!</div>';
+    return;
+  }
+
+  let html = `<table>
+    <thead><tr><th class="drag-handle-cell no-print"></th><th>Document</th><th>Validity</th><th>MOFA</th><th>Apostille</th><th>Translation</th><th class="no-print">Actions</th></tr></thead><tbody>`;
+  
+  docs.forEach((d, idx) => {
+    html += `<tr data-index="${idx}" draggable="true" class="doc-row">
+      <td class="drag-handle-cell no-print">⠿</td>
+      <td><strong>${d.name}</strong></td>
+      <td>${d.validity}</td>
+      <td>${d.mofa}</td>
+      <td>${d.apostille}</td>
+      <td>${d.translation}</td>
+      <td class="no-print">
+        <div class="action-group">
+          <button class="btn btn-sm btn-outline" onclick="editDocument(${idx})">✎</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteDocument(${idx})">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  
+  html += `</tbody></table>
+    <div class="footnote">
+      <strong>📌 Important Note:</strong> All educational documents requiring attestation from MOFA must first be verified from the issuing board/university and then by IBCC/HEC.
+    </div>
+  `;
+  docsDiv.innerHTML = html;
+  
+  // Setup drag and drop for document rows
+  const tbody = docsDiv.querySelector('tbody');
+  if (!tbody) return;
+  
+  let draggedRow = null;
+  
+  tbody.addEventListener('dragstart', (e) => {
+    const row = e.target.closest('tr');
+    if (!row) return;
+    draggedRow = row;
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', row.dataset.index);
+  });
+  
+  tbody.addEventListener('dragend', (e) => {
+    const row = e.target.closest('tr');
+    if (row) row.classList.remove('dragging');
+    document.querySelectorAll('.doc-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+    draggedRow = null;
+  });
+  
+  tbody.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const row = e.target.closest('tr');
+    if (!row || row === draggedRow) return;
+    document.querySelectorAll('.doc-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+    row.classList.add('drag-over');
+  });
+  
+  tbody.addEventListener('dragleave', (e) => {
+    const row = e.target.closest('tr');
+    if (row) row.classList.remove('drag-over');
+  });
+  
+  tbody.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const row = e.target.closest('tr');
+    if (!row) return;
+    row.classList.remove('drag-over');
+    
+    if (draggedRow && draggedRow !== row) {
+      const fromIndex = parseInt(draggedRow.dataset.index);
+      const toIndex = parseInt(row.dataset.index);
+      if (!isNaN(fromIndex) && !isNaN(toIndex) && fromIndex !== toIndex) {
+        const docsArray = visaData[selectedCountry][selectedCategory];
+        const [moved] = docsArray.splice(fromIndex, 1);
+        docsArray.splice(toIndex, 0, moved);
+        saveData(visaData);
+        renderDocs();
+      }
+    }
+    draggedRow = null;
+  });
+}
+
+// ---------- ACTIONS ----------
+function selectCountry(country) {
+  selectedCountry = country;
+  selectedCategory = null;
+  renderCountries();
+  renderCategories();
+  renderDocs();
+  document.getElementById('countrySearch').value = '';
+  filterCountries();
+  document.getElementById('categorySearch').value = '';
+  filterCategories();
+}
+
+function selectCategory(cat) {
+  selectedCategory = cat;
+  renderCategories();
+  renderDocs();
+  document.getElementById('categorySearch').value = '';
+  filterCategories();
+  document.getElementById('documentSearch').value = '';
+  filterDocuments();
+}
+
+function resetAll() {
+  selectedCountry = null;
+  selectedCategory = null;
+  renderCountries();
+  renderCategories();
+  renderDocs();
+  docContext.innerText = '';
+  document.getElementById('countrySearch').value = '';
+  document.getElementById('categorySearch').value = '';
+  document.getElementById('documentSearch').value = '';
+  filterCountries();
+  filterCategories();
+  filterDocuments();
+}
+
+function clearAllData() {
+  if (!confirm('⚠️ This will permanently delete ALL your data. Are you sure?')) return;
+  if (!confirm('Really? All countries, categories, and documents will be gone.')) return;
+  visaData = {};
+  saveData(visaData);
+  selectedCountry = null;
+  selectedCategory = null;
+  renderAll();
+}
+
+// ---------- CRUD: COUNTRY ----------
+function deleteCountry(country) {
+  if (!confirm(`Delete country "${country}" and all its data?`)) return;
+  delete visaData[country];
+  saveData(visaData);
+  if (selectedCountry === country) {
+    selectedCountry = null;
+    selectedCategory = null;
+  }
+  renderAll();
+}
+
+function editCountryName(oldName) {
+  const newName = prompt("Rename country to:", oldName);
+  if (!newName) return;
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed === oldName) return;
+  if (visaData[trimmed]) {
+    alert(`Country "${trimmed}" already exists.`);
+    return;
+  }
+  visaData[trimmed] = visaData[oldName];
+  delete visaData[oldName];
+  saveData(visaData);
+  if (selectedCountry === oldName) selectedCountry = trimmed;
+  renderAll();
+}
+
+// ---------- CRUD: CATEGORY ----------
+function deleteCategory(cat) {
+  if (!selectedCountry) return;
+  if (!confirm(`Delete category "${cat}" from ${selectedCountry}?`)) return;
+  delete visaData[selectedCountry][cat];
+  saveData(visaData);
+  if (selectedCategory === cat) selectedCategory = null;
+  renderAll();
+}
+
+function editCategoryName(oldName) {
+  if (!selectedCountry) return;
+  const newName = prompt("Rename category to:", oldName);
+  if (!newName) return;
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed === oldName) return;
+  if (visaData[selectedCountry][trimmed]) {
+    alert(`Category "${trimmed}" already exists.`);
+    return;
+  }
+  visaData[selectedCountry][trimmed] = visaData[selectedCountry][oldName];
+  delete visaData[selectedCountry][oldName];
+  saveData(visaData);
+  if (selectedCategory === oldName) selectedCategory = trimmed;
+  renderAll();
+}
+
+// ---------- CRUD: DOCUMENT ----------
+function deleteDocument(index) {
+  if (!selectedCountry || !selectedCategory) return;
+  const docs = visaData[selectedCountry][selectedCategory];
+  if (index < 0 || index >= docs.length) return;
+  if (!confirm(`Delete "${docs[index].name}" ?`)) return;
+  docs.splice(index, 1);
+  saveData(visaData);
+  renderDocs();
+  renderCategories();
+}
+
+function editDocument(index) {
+  if (!selectedCountry || !selectedCategory) return;
+  const docs = visaData[selectedCountry][selectedCategory];
+  const doc = docs[index];
+  if (!doc) return;
+  const newName = prompt("Document name:", doc.name);
+  if (newName === null) return;
+  const newValidity = prompt("Validity:", doc.validity);
+  if (newValidity === null) return;
+  const newMofa = prompt("MOFA (Yes/No):", doc.mofa);
+  if (newMofa === null) return;
+  const newApostille = prompt("Apostille (Yes/No):", doc.apostille);
+  if (newApostille === null) return;
+  const newTranslation = prompt("Translation (Yes/No):", doc.translation);
+  if (newTranslation === null) return;
+
+  docs[index] = {
+    name: newName.trim() || doc.name,
+    validity: newValidity.trim() || doc.validity,
+    mofa: newMofa.trim() || doc.mofa,
+    apostille: newApostille.trim() || doc.apostille,
+    translation: newTranslation.trim() || doc.translation
+  };
+  saveData(visaData);
+  renderDocs();
+  renderCategories();
+}
+
+function addNewDocument() {
+  if (!selectedCountry || !selectedCategory) {
+    alert("Please select a country and category first.");
+    return;
+  }
+  const name = prompt("Document name:");
+  if (!name) return;
+  const validity = prompt("Validity (e.g. 6 months):") || "—";
+  const mofa = prompt("MOFA (Yes/No):") || "No";
+  const apostille = prompt("Apostille (Yes/No):") || "No";
+  const translation = prompt("Translation (Yes/No):") || "No";
+  visaData[selectedCountry][selectedCategory].push({
+    name: name.trim(),
+    validity: validity.trim(),
+    mofa: mofa.trim(),
+    apostille: apostille.trim(),
+    translation: translation.trim()
+  });
+  saveData(visaData);
+  renderDocs();
+  renderCategories();
+}
+
+// ---------- PRINT ----------
+function printListView() {
+  if (!selectedCountry || !selectedCategory) {
+    alert("Select a country and category to print.");
+    return;
+  }
+  const country = selectedCountry;
+  const category = selectedCategory;
+  const docs = visaData[country]?.[category] || [];
+  if (docs.length === 0) {
+    alert("No documents to print.");
+    return;
+  }
+
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  if (!printWindow) {
+    alert("Please allow popups for printing.");
+    return;
+  }
+
+  let rows = docs.map(d => `
+    <tr>
+      <td>${d.name}</td>
+      <td>${d.validity}</td>
+      <td>${d.mofa}</td>
+      <td>${d.apostille}</td>
+      <td>${d.translation}</td>
+    </tr>
+  `).join('');
+
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head><title>Visa documents - ${country} ${category}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 30px; }
+    h2 { border-bottom: 2px solid #333; padding-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background: #1e293b; color: white; padding: 10px; text-align: left; }
+    td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+    .meta { color: #475569; margin-bottom: 8px; }
+    .footer { margin-top: 30px; color: #64748b; font-size: 0.8rem; }
+    .footnote { 
+      margin-top: 20px; 
+      padding: 15px; 
+      background: #f8fafc; 
+      border-left: 4px solid #1e293b; 
+      font-size: 0.85rem; 
+      color: #334155;
+      border-radius: 4px;
+    }
+    .footnote strong { color: #0f172a; }
+  </style>
+  </head>
+  <body>
+    <h2>📋 Visa requirements · ${country}</h2>
+    <div class="meta"><strong>Category:</strong> ${category} &nbsp;|&nbsp; <strong>Documents:</strong> ${docs.length}</div>
+    <table>
+      <thead><tr><th>Document</th><th>Validity</th><th>MOFA</th><th>Apostille</th><th>Translation</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    
+    <div class="footnote">
+      <strong>📌 Important Note:</strong> All educational documents requiring attestation from MOFA must first be verified from the issuing board/university and then by IBCC/HEC.
+    </div>
+    
+    <div class="footer">Printed from Visa Manager · ${new Date().toLocaleString()}</div>
+  </body>
+  </html>
+  `;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
+// ---------- HELPERS ----------
+function renderAll() {
+  renderCountries();
+  renderCategories();
+  renderDocs();
+  // Reset search filters
+  document.getElementById('countrySearch').value = '';
+  document.getElementById('categorySearch').value = '';
+  document.getElementById('documentSearch').value = '';
+  filterCountries();
+  filterCategories();
+  filterDocuments();
+}
+
+// ---------- INIT ----------
+function init() {
+  if (!localStorage.getItem(STORAGE_KEY)) {
+    saveData(visaData);
+  }
+  renderAll();
+}
+init();
+
+// Keyboard: Escape = home or close modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (modal.classList.contains('active')) {
+      closeModal();
+    } else {
+      resetAll();
+    }
+  }
+});
+
+// Save data before page unload
+window.addEventListener('beforeunload', () => {
+  saveData(visaData);
+});
+</script>
+</body>
+</html>
