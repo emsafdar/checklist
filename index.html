@@ -439,8 +439,8 @@ function getDefaultData() {
     defaultData[country] = {};
     ["Tourist Visa", "Business Visa"].forEach(cat => {
       defaultData[country][cat] = [
-        { name: "Passport Copy", validity: "6 months", mofa: "No", apostille: "No", translation: "Yes" },
-        { name: "Bank Statement", validity: "3 months", mofa: "No", apostille: "No", translation: "Yes" }
+        { name: "Passport Copy", validity: "6 months", mofa: "No", apostille: "No", translation: "No" },
+        { name: "Bank Statement", validity: "3 months", mofa: "No", apostille: "No", translation: "No" }
       ];
     });
   });
@@ -766,7 +766,7 @@ function showDocumentSelector() {
         validity: prompt("Validity (e.g. 6 months):") || "—",
         mofa: prompt("MOFA (Yes/No):") || "No",
         apostille: prompt("Apostille (Yes/No):") || "No",
-        translation: prompt("Translation (Yes/No):") || "Yes"
+        translation: prompt("Translation (Yes/No):") || "No"
       };
       visaData[selectedCountry][selectedCategory].push(newDoc);
       saveData(visaData);
