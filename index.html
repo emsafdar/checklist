@@ -67,6 +67,10 @@
     .btn-info { background: #dbeafe; border-color: #93c5fd; color: #1e3a8a; }
     .btn-info:hover { background: #bfdbfe; }
     .btn-sm { padding: 4px 12px; font-size: 0.8rem; }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     
     .status-bar {
       background: #f1f6fa;
@@ -84,9 +88,20 @@
       border-radius: 50%;
       display: inline-block;
     }
-    .status-dot.connected { background: #22c55e; }
-    .status-dot.connecting { background: #eab308; }
+    .status-dot.connected { background: #22c55e; animation: pulse-green 2s infinite; }
+    .status-dot.connecting { background: #eab308; animation: pulse-yellow 1s infinite; }
     .status-dot.disconnected { background: #ef4444; }
+    
+    @keyframes pulse-green {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    @keyframes pulse-yellow {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
 
     .grid-3 {
       display: grid;
@@ -346,6 +361,36 @@
       outline: none;
       border-color: #1e293b;
     }
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255,255,255,0.8);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .loading-overlay.active {
+      display: flex;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #e9edf2;
+      border-top: 5px solid #1e293b;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .loading-text {
+      color: #475569;
+      font-size: 1rem;
+    }
     @media print {
       .no-print { display: none !important; }
       .print-hide { display: none !important; }
@@ -362,6 +407,12 @@
   </style>
 </head>
 <body>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Connecting to Firebase...</div>
+</div>
+
 <div class="app-wrapper" id="appWrapper">
   <h2>
     <span>🛂 Visa Requirements</span>
@@ -376,10 +427,10 @@
   </h2>
 
   <div class="toolbar no-print">
-    <button class="btn btn-primary" onclick="showCountrySelector()">🌍 Add country from list</button>
-    <button class="btn btn-warning" onclick="showCategorySelector()">📁 Add category from list</button>
-    <button class="btn btn-info" onclick="showDocumentSelector()">📄 Add document from list</button>
-    <button class="btn btn-success" onclick="addNewDocument()">➕ Add custom doc</button>
+    <button class="btn btn-primary" id="addCountryBtn" onclick="showCountrySelector()">🌍 Add country from list</button>
+    <button class="btn btn-warning" id="addCategoryBtn" onclick="showCategorySelector()">📁 Add category from list</button>
+    <button class="btn btn-info" id="addDocumentBtn" onclick="showDocumentSelector()">📄 Add document from list</button>
+    <button class="btn btn-success" id="addCustomDocBtn" onclick="addNewDocument()">➕ Add custom doc</button>
     <button class="btn btn-outline" onclick="resetAll()">⟲ Clear selection</button>
     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear all data</button>
   </div>
@@ -437,7 +488,7 @@ const FIREBASE_CONFIG = {
 };
 </script>
 
-<!-- Firebase SDK -->
+<!-- Firebase SDK with Optimized Settings -->
 <script type="importmap">
 {
   "imports": {
@@ -450,11 +501,18 @@ const FIREBASE_CONFIG = {
 <script type="module">
 // ---------- FIREBASE IMPORTS ----------
 import { initializeApp } from "firebase";
-import { getDatabase, ref, set, get, onValue, push, remove, update } from "firebase/database";
+import { getDatabase, ref, set, onValue, enableLogging } from "firebase/database";
 
-// Initialize Firebase
+// Disable Firebase logging for faster performance
+enableLogging(false);
+
+// Initialize Firebase with optimized settings
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getDatabase(app);
+
+// Optional: Set database URL explicitly for faster connection
+// const db = getDatabase(app, "https://fvic-visa-checklist-default-rtdb.firebaseio.com/");
+
 const visaDataRef = ref(db, 'visaData');
 
 // ---------- GLOBAL STATE ----------
@@ -465,6 +523,8 @@ let modalCallback = null;
 let modalItems = [];
 let modalType = '';
 let isInitialLoad = true;
+let isConnected = false;
+let connectionTimeout = null;
 
 // DOM refs
 const countriesDiv = document.getElementById("countries");
@@ -479,34 +539,69 @@ const addNewSection = document.getElementById("addNewSection");
 const newItemInput = document.getElementById("newItemInput");
 const statusDot = document.getElementById("statusDot");
 const statusText = document.getElementById("statusText");
+const loadingOverlay = document.getElementById("loadingOverlay");
+const addCountryBtn = document.getElementById("addCountryBtn");
+const addCategoryBtn = document.getElementById("addCategoryBtn");
+const addDocumentBtn = document.getElementById("addDocumentBtn");
+const addCustomDocBtn = document.getElementById("addCustomDocBtn");
 
 // ---------- UPDATE STATUS ----------
-function updateStatus(connected) {
+function updateStatus(connected, message = '') {
+  isConnected = connected;
   if (connected) {
     statusDot.className = 'status-dot connected';
-    statusText.textContent = 'Connected to Firebase';
+    statusText.textContent = message || 'Connected to Firebase';
+    loadingOverlay.classList.remove('active');
+    enableButtons(true);
   } else {
     statusDot.className = 'status-dot disconnected';
-    statusText.textContent = 'Disconnected';
+    statusText.textContent = message || 'Disconnected';
+    loadingOverlay.classList.add('active');
+    enableButtons(false);
   }
 }
 
-// ---------- FIREBASE: LOAD DATA ----------
+function enableButtons(enabled) {
+  const buttons = [addCountryBtn, addCategoryBtn, addDocumentBtn, addCustomDocBtn];
+  buttons.forEach(btn => {
+    if (btn) btn.disabled = !enabled;
+  });
+}
+
+// ---------- FIREBASE: LOAD DATA WITH TIMEOUT ----------
 function loadDataFromFirebase() {
-  updateStatus(false);
-  statusText.textContent = 'Connecting...';
+  updateStatus(false, 'Connecting...');
+  loadingOverlay.classList.add('active');
   
+  // Set a timeout for connection
+  connectionTimeout = setTimeout(() => {
+    if (!isConnected) {
+      updateStatus(false, 'Connection timeout - retrying...');
+      // Try to reconnect
+      setTimeout(() => {
+        loadDataFromFirebase();
+      }, 3000);
+    }
+  }, 8000);
+  
+  // Use onValue with a shorter timeout
   onValue(visaDataRef, (snapshot) => {
+    // Clear timeout since we got a response
+    if (connectionTimeout) {
+      clearTimeout(connectionTimeout);
+      connectionTimeout = null;
+    }
+    
     const data = snapshot.val();
     if (data) {
       visaData = data;
-      updateStatus(true);
+      updateStatus(true, 'Connected');
     } else {
       // Initialize with default data if empty
       const defaultData = getDefaultData();
       set(visaDataRef, defaultData);
       visaData = defaultData;
-      updateStatus(true);
+      updateStatus(true, 'Initialized with defaults');
     }
     
     if (!isInitialLoad) {
@@ -522,16 +617,34 @@ function loadDataFromFirebase() {
     
     renderAll();
     isInitialLoad = false;
+    loadingOverlay.classList.remove('active');
+    
   }, (error) => {
     console.error('Firebase error:', error);
-    updateStatus(false);
-    statusText.textContent = 'Error loading data';
+    if (connectionTimeout) {
+      clearTimeout(connectionTimeout);
+      connectionTimeout = null;
+    }
+    updateStatus(false, 'Error loading data - retrying...');
+    loadingOverlay.classList.add('active');
+    
+    // Retry after 3 seconds
+    setTimeout(() => {
+      loadDataFromFirebase();
+    }, 3000);
   });
 }
 
 // ---------- FIREBASE: SAVE DATA ----------
 function saveDataToFirebase(data) {
-  set(visaDataRef, data);
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait for connection.');
+    return;
+  }
+  set(visaDataRef, data).catch(error => {
+    console.error('Error saving data:', error);
+    alert('Error saving data to Firebase. Please try again.');
+  });
 }
 
 // ---------- DEFAULT DATA ----------
@@ -550,7 +663,7 @@ function getDefaultData() {
   return defaultData;
 }
 
-// ---------- SEARCH FUNCTIONS ----------
+// ---------- SEARCH FUNCTIONS (same as before) ----------
 window.filterCountries = function() {
   const searchTerm = document.getElementById('countrySearch').value.toLowerCase();
   const boxes = countriesDiv.querySelectorAll('.box');
@@ -688,7 +801,7 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) window.closeModal();
 });
 
-// Enter key in modal search
+// Enter key handlers
 modalSearch.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const firstVisible = modalList.querySelector('.modal-item:not(.hidden)');
@@ -698,7 +811,6 @@ modalSearch.addEventListener('keydown', (e) => {
   }
 });
 
-// Enter key in new item input
 newItemInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     window.addNewItemFromModal();
@@ -751,6 +863,10 @@ window.addItemToModalList = function(item) {
 
 // ---------- SELECTOR FUNCTIONS ----------
 window.showCountrySelector = function() {
+  if (!isConnected) {
+    alert('Please wait for Firebase connection.');
+    return;
+  }
   const existingCountries = Object.keys(visaData);
   const availableCountries = COUNTRIES_LIST.filter(c => !existingCountries.includes(c));
   
@@ -779,6 +895,10 @@ window.showCountrySelector = function() {
 }
 
 window.showCategorySelector = function() {
+  if (!isConnected) {
+    alert('Please wait for Firebase connection.');
+    return;
+  }
   if (!selectedCountry) {
     alert('Please select a country first.');
     return;
@@ -811,6 +931,10 @@ window.showCategorySelector = function() {
 }
 
 window.showDocumentSelector = function() {
+  if (!isConnected) {
+    alert('Please wait for Firebase connection.');
+    return;
+  }
   if (!selectedCountry || !selectedCategory) {
     alert('Please select a country and category first.');
     return;
@@ -1132,6 +1256,10 @@ window.resetAll = function() {
 }
 
 window.clearAllData = function() {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   if (!confirm('⚠️ This will permanently delete ALL data from Firebase. Are you sure?')) return;
   if (!confirm('Really? All countries, categories, and documents will be gone for everyone.')) return;
   visaData = {};
@@ -1143,6 +1271,10 @@ window.clearAllData = function() {
 
 // ---------- CRUD: COUNTRY ----------
 window.deleteCountry = function(country) {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   if (!confirm(`Delete country "${country}" and all its data?`)) return;
   delete visaData[country];
   saveDataToFirebase(visaData);
@@ -1154,6 +1286,10 @@ window.deleteCountry = function(country) {
 }
 
 window.editCountryName = function(oldName) {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   const newName = prompt("Rename country to:", oldName);
   if (!newName) return;
   const trimmed = newName.trim();
@@ -1171,6 +1307,10 @@ window.editCountryName = function(oldName) {
 
 // ---------- CRUD: CATEGORY ----------
 window.deleteCategory = function(cat) {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   if (!selectedCountry) return;
   if (!confirm(`Delete category "${cat}" from ${selectedCountry}?`)) return;
   delete visaData[selectedCountry][cat];
@@ -1180,6 +1320,10 @@ window.deleteCategory = function(cat) {
 }
 
 window.editCategoryName = function(oldName) {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   if (!selectedCountry) return;
   const newName = prompt("Rename category to:", oldName);
   if (!newName) return;
@@ -1198,6 +1342,10 @@ window.editCategoryName = function(oldName) {
 
 // ---------- CRUD: DOCUMENT ----------
 window.deleteDocument = function(index) {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   if (!selectedCountry || !selectedCategory) return;
   const docs = visaData[selectedCountry][selectedCategory];
   if (index < 0 || index >= docs.length) return;
@@ -1209,6 +1357,10 @@ window.deleteDocument = function(index) {
 }
 
 window.editDocument = function(index) {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   if (!selectedCountry || !selectedCategory) return;
   const docs = visaData[selectedCountry][selectedCategory];
   const doc = docs[index];
@@ -1237,6 +1389,10 @@ window.editDocument = function(index) {
 }
 
 window.addNewDocument = function() {
+  if (!isConnected) {
+    alert('Not connected to Firebase. Please wait.');
+    return;
+  }
   if (!selectedCountry || !selectedCategory) {
     alert("Please select a country and category first.");
     return;
@@ -1349,7 +1505,7 @@ function renderAll() {
 }
 
 // ---------- INIT ----------
-// Load data from Firebase
+// Load data from Firebase with optimized connection
 loadDataFromFirebase();
 
 // Keyboard: Escape = home or close modal
