@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visa Manager · Firebase</title>
+  <title>Visa Manager · JSON</title>
   <style>
     * { box-sizing: border-box; margin: 0; }
     body {
@@ -67,17 +67,13 @@
     .btn-info { background: #dbeafe; border-color: #93c5fd; color: #1e3a8a; }
     .btn-info:hover { background: #bfdbfe; }
     .btn-sm { padding: 4px 12px; font-size: 0.8rem; }
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
     
     .status-bar {
-      background: #f1f6fa;
+      background: #dcfce7;
       padding: 8px 16px;
       border-radius: 40px;
       font-size: 0.85rem;
-      color: #475569;
+      color: #166534;
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -87,20 +83,7 @@
       height: 8px;
       border-radius: 50%;
       display: inline-block;
-    }
-    .status-dot.connected { background: #22c55e; animation: pulse-green 2s infinite; }
-    .status-dot.connecting { background: #eab308; animation: pulse-yellow 1s infinite; }
-    .status-dot.disconnected { background: #ef4444; }
-    
-    @keyframes pulse-green {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-    @keyframes pulse-yellow {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.8); }
-      100% { opacity: 1; transform: scale(1); }
+      background: #22c55e;
     }
 
     .grid-3 {
@@ -361,35 +344,64 @@
       outline: none;
       border-color: #1e293b;
     }
-    .loading-overlay {
+    .json-editor {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255,255,255,0.8);
-      z-index: 2000;
+      background: rgba(0,0,0,0.7);
+      z-index: 3000;
       justify-content: center;
       align-items: center;
-      flex-direction: column;
-      gap: 20px;
+      padding: 20px;
     }
-    .loading-overlay.active {
+    .json-editor.active {
       display: flex;
     }
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #e9edf2;
-      border-top: 5px solid #1e293b;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    .json-editor-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .json-editor-content h3 {
+      margin-bottom: 16px;
+      border-bottom: 2px solid #e9edf2;
+      padding-bottom: 12px;
     }
-    .loading-text {
-      color: #475569;
-      font-size: 1rem;
+    .json-editor-content textarea {
+      flex: 1;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      border: 1px solid #d0d8e0;
+      border-radius: 12px;
+      min-height: 400px;
+      resize: vertical;
+    }
+    .json-editor-content textarea:focus {
+      outline: none;
+      border-color: #1e293b;
+    }
+    .json-editor-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      justify-content: flex-end;
+      border-top: 1px solid #e9edf2;
+      padding-top: 16px;
+    }
+    .json-error {
+      color: #dc2626;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      display: none;
+    }
+    .json-error.active {
+      display: block;
     }
     @media print {
       .no-print { display: none !important; }
@@ -407,19 +419,13 @@
   </style>
 </head>
 <body>
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="spinner"></div>
-  <div class="loading-text">Connecting to Firebase...</div>
-</div>
-
 <div class="app-wrapper" id="appWrapper">
   <h2>
     <span>🛂 Visa Requirements</span>
     <span class="no-print">
       <span class="status-bar">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Connecting...</span>
+        <span class="status-dot"></span>
+        <span>📁 JSON Mode</span>
       </span>
       <button class="btn btn-print" onclick="printListView()">🖨️ Print list</button>
       <button class="btn btn-outline" onclick="resetAll()">🏠 Home / clear</button>
@@ -427,12 +433,13 @@
   </h2>
 
   <div class="toolbar no-print">
-    <button class="btn btn-primary" id="addCountryBtn" onclick="showCountrySelector()">🌍 Add country from list</button>
-    <button class="btn btn-warning" id="addCategoryBtn" onclick="showCategorySelector()">📁 Add category from list</button>
-    <button class="btn btn-info" id="addDocumentBtn" onclick="showDocumentSelector()">📄 Add document from list</button>
-    <button class="btn btn-success" id="addCustomDocBtn" onclick="addNewDocument()">➕ Add custom doc</button>
+    <button class="btn btn-primary" onclick="showCountrySelector()">🌍 Add country from list</button>
+    <button class="btn btn-warning" onclick="showCategorySelector()">📁 Add category from list</button>
+    <button class="btn btn-info" onclick="showDocumentSelector()">📄 Add document from list</button>
+    <button class="btn btn-success" onclick="addNewDocument()">➕ Add custom doc</button>
     <button class="btn btn-outline" onclick="resetAll()">⟲ Clear selection</button>
     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear all data</button>
+    <button class="btn btn-primary" onclick="openJsonEditor()">✏️ Edit JSON</button>
   </div>
 
   <div class="grid-3" id="mainGrid">
@@ -470,184 +477,30 @@
   </div>
 </div>
 
+<!-- JSON Editor Modal -->
+<div class="json-editor" id="jsonEditor">
+  <div class="json-editor-content">
+    <h3>✏️ Edit JSON Data</h3>
+    <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">Edit the JSON below. Changes will be saved to the browser and can be downloaded.</p>
+    <textarea id="jsonTextArea"></textarea>
+    <div class="json-error" id="jsonError">⚠️ Invalid JSON format. Please fix the errors.</div>
+    <div class="json-editor-actions">
+      <button class="btn btn-success" onclick="saveJsonChanges()">💾 Apply Changes</button>
+      <button class="btn btn-info" onclick="downloadJson()">📥 Download JSON</button>
+      <button class="btn btn-outline" onclick="closeJsonEditor()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script src="countries.js"></script>
 <script src="categories.js"></script>
 <script src="documents.js"></script>
 
-<!-- Firebase Config -->
 <script>
-// Firebase configuration
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCWeyOk-eE4VyQ4nhDhf2BsIwc3oCLfgGw",
-  authDomain: "fvic-visa-checklist.firebaseapp.com",
-  projectId: "fvic-visa-checklist",
-  storageBucket: "fvic-visa-checklist.firebasestorage.app",
-  messagingSenderId: "90081290359",
-  appId: "1:90081290359:web:f5a493b2163ecc46a8fe72",
-  measurementId: "G-S63B5QCSW1"
-};
-</script>
+// ---------- DATA MANAGEMENT ----------
+const DATA_KEY = 'visaRequirementsData';
 
-<!-- Firebase SDK with Optimized Settings -->
-<script type="importmap">
-{
-  "imports": {
-    "firebase": "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js",
-    "firebase/database": "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js"
-  }
-}
-</script>
-
-<script type="module">
-// ---------- FIREBASE IMPORTS ----------
-import { initializeApp } from "firebase";
-import { getDatabase, ref, set, onValue, enableLogging } from "firebase/database";
-
-// Disable Firebase logging for faster performance
-enableLogging(false);
-
-// Initialize Firebase with optimized settings
-const app = initializeApp(FIREBASE_CONFIG);
-const db = getDatabase(app);
-
-// Optional: Set database URL explicitly for faster connection
-const db = getDatabase(app, "https://fvic-visa-checklist-default-rtdb.firebaseio.com/");
-
-const visaDataRef = ref(db, 'visaData');
-
-// ---------- GLOBAL STATE ----------
-let visaData = {};
-let selectedCountry = null;
-let selectedCategory = null;
-let modalCallback = null;
-let modalItems = [];
-let modalType = '';
-let isInitialLoad = true;
-let isConnected = false;
-let connectionTimeout = null;
-
-// DOM refs
-const countriesDiv = document.getElementById("countries");
-const categoriesDiv = document.getElementById("categories");
-const docsDiv = document.getElementById("docs");
-const docContext = document.getElementById("docContext");
-const modal = document.getElementById("selectorModal");
-const modalTitle = document.getElementById("modalTitle");
-const modalList = document.getElementById("modalList");
-const modalSearch = document.getElementById("modalSearch");
-const addNewSection = document.getElementById("addNewSection");
-const newItemInput = document.getElementById("newItemInput");
-const statusDot = document.getElementById("statusDot");
-const statusText = document.getElementById("statusText");
-const loadingOverlay = document.getElementById("loadingOverlay");
-const addCountryBtn = document.getElementById("addCountryBtn");
-const addCategoryBtn = document.getElementById("addCategoryBtn");
-const addDocumentBtn = document.getElementById("addDocumentBtn");
-const addCustomDocBtn = document.getElementById("addCustomDocBtn");
-
-// ---------- UPDATE STATUS ----------
-function updateStatus(connected, message = '') {
-  isConnected = connected;
-  if (connected) {
-    statusDot.className = 'status-dot connected';
-    statusText.textContent = message || 'Connected to Firebase';
-    loadingOverlay.classList.remove('active');
-    enableButtons(true);
-  } else {
-    statusDot.className = 'status-dot disconnected';
-    statusText.textContent = message || 'Disconnected';
-    loadingOverlay.classList.add('active');
-    enableButtons(false);
-  }
-}
-
-function enableButtons(enabled) {
-  const buttons = [addCountryBtn, addCategoryBtn, addDocumentBtn, addCustomDocBtn];
-  buttons.forEach(btn => {
-    if (btn) btn.disabled = !enabled;
-  });
-}
-
-// ---------- FIREBASE: LOAD DATA WITH TIMEOUT ----------
-function loadDataFromFirebase() {
-  updateStatus(false, 'Connecting...');
-  loadingOverlay.classList.add('active');
-  
-  // Set a timeout for connection
-  connectionTimeout = setTimeout(() => {
-    if (!isConnected) {
-      updateStatus(false, 'Connection timeout - retrying...');
-      // Try to reconnect
-      setTimeout(() => {
-        loadDataFromFirebase();
-      }, 3000);
-    }
-  }, 8000);
-  
-  // Use onValue with a shorter timeout
-  onValue(visaDataRef, (snapshot) => {
-    // Clear timeout since we got a response
-    if (connectionTimeout) {
-      clearTimeout(connectionTimeout);
-      connectionTimeout = null;
-    }
-    
-    const data = snapshot.val();
-    if (data) {
-      visaData = data;
-      updateStatus(true, 'Connected');
-    } else {
-      // Initialize with default data if empty
-      const defaultData = getDefaultData();
-      set(visaDataRef, defaultData);
-      visaData = defaultData;
-      updateStatus(true, 'Initialized with defaults');
-    }
-    
-    if (!isInitialLoad) {
-      // Preserve selection if possible
-      if (selectedCountry && !visaData[selectedCountry]) {
-        selectedCountry = null;
-        selectedCategory = null;
-      }
-      if (selectedCategory && selectedCountry && !visaData[selectedCountry]?.[selectedCategory]) {
-        selectedCategory = null;
-      }
-    }
-    
-    renderAll();
-    isInitialLoad = false;
-    loadingOverlay.classList.remove('active');
-    
-  }, (error) => {
-    console.error('Firebase error:', error);
-    if (connectionTimeout) {
-      clearTimeout(connectionTimeout);
-      connectionTimeout = null;
-    }
-    updateStatus(false, 'Error loading data - retrying...');
-    loadingOverlay.classList.add('active');
-    
-    // Retry after 3 seconds
-    setTimeout(() => {
-      loadDataFromFirebase();
-    }, 3000);
-  });
-}
-
-// ---------- FIREBASE: SAVE DATA ----------
-function saveDataToFirebase(data) {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait for connection.');
-    return;
-  }
-  set(visaDataRef, data).catch(error => {
-    console.error('Error saving data:', error);
-    alert('Error saving data to Firebase. Please try again.');
-  });
-}
-
-// ---------- DEFAULT DATA ----------
+// Default data
 function getDefaultData() {
   const defaultData = {};
   const sampleCountries = ["Germany", "Canada", "United States", "United Kingdom", "Australia"];
@@ -663,7 +516,49 @@ function getDefaultData() {
   return defaultData;
 }
 
-// ---------- SEARCH FUNCTIONS (same as before) ----------
+// Load data from localStorage or default
+function loadData() {
+  const stored = localStorage.getItem(DATA_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error('Error parsing stored data:', e);
+      return getDefaultData();
+    }
+  }
+  return getDefaultData();
+}
+
+// Save data to localStorage
+function saveData(data) {
+  localStorage.setItem(DATA_KEY, JSON.stringify(data, null, 2));
+}
+
+// ---------- GLOBAL STATE ----------
+let visaData = loadData();
+let selectedCountry = null;
+let selectedCategory = null;
+let modalCallback = null;
+let modalItems = [];
+let modalType = '';
+
+// DOM refs
+const countriesDiv = document.getElementById("countries");
+const categoriesDiv = document.getElementById("categories");
+const docsDiv = document.getElementById("docs");
+const docContext = document.getElementById("docContext");
+const modal = document.getElementById("selectorModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalList = document.getElementById("modalList");
+const modalSearch = document.getElementById("modalSearch");
+const addNewSection = document.getElementById("addNewSection");
+const newItemInput = document.getElementById("newItemInput");
+const jsonEditor = document.getElementById("jsonEditor");
+const jsonTextArea = document.getElementById("jsonTextArea");
+const jsonError = document.getElementById("jsonError");
+
+// ---------- SEARCH FUNCTIONS ----------
 window.filterCountries = function() {
   const searchTerm = document.getElementById('countrySearch').value.toLowerCase();
   const boxes = countriesDiv.querySelectorAll('.box');
@@ -801,7 +696,6 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) window.closeModal();
 });
 
-// Enter key handlers
 modalSearch.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const firstVisible = modalList.querySelector('.modal-item:not(.hidden)');
@@ -861,12 +755,56 @@ window.addItemToModalList = function(item) {
   modalList.appendChild(div);
 }
 
+// ---------- JSON EDITOR FUNCTIONS ----------
+window.openJsonEditor = function() {
+  jsonTextArea.value = JSON.stringify(visaData, null, 2);
+  jsonError.classList.remove('active');
+  jsonEditor.classList.add('active');
+}
+
+window.closeJsonEditor = function() {
+  jsonEditor.classList.remove('active');
+  jsonError.classList.remove('active');
+}
+
+window.saveJsonChanges = function() {
+  try {
+    const newData = JSON.parse(jsonTextArea.value);
+    visaData = newData;
+    saveData(visaData);
+    renderAll();
+    closeJsonEditor();
+    alert('✅ Data updated successfully!');
+  } catch (e) {
+    jsonError.classList.add('active');
+    jsonError.textContent = `⚠️ Invalid JSON: ${e.message}`;
+  }
+}
+
+window.downloadJson = function() {
+  try {
+    const data = JSON.parse(jsonTextArea.value);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'visa_data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Invalid JSON. Please fix errors first.');
+  }
+}
+
+// Close JSON editor with Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && jsonEditor.classList.contains('active')) {
+    closeJsonEditor();
+  }
+});
+
 // ---------- SELECTOR FUNCTIONS ----------
 window.showCountrySelector = function() {
-  if (!isConnected) {
-    alert('Please wait for Firebase connection.');
-    return;
-  }
   const existingCountries = Object.keys(visaData);
   const availableCountries = COUNTRIES_LIST.filter(c => !existingCountries.includes(c));
   
@@ -882,7 +820,7 @@ window.showCountrySelector = function() {
     (country) => {
       if (!visaData[country]) {
         visaData[country] = {};
-        saveDataToFirebase(visaData);
+        saveData(visaData);
         selectedCountry = country;
         selectedCategory = null;
         renderAll();
@@ -895,10 +833,6 @@ window.showCountrySelector = function() {
 }
 
 window.showCategorySelector = function() {
-  if (!isConnected) {
-    alert('Please wait for Firebase connection.');
-    return;
-  }
   if (!selectedCountry) {
     alert('Please select a country first.');
     return;
@@ -919,7 +853,7 @@ window.showCategorySelector = function() {
     (category) => {
       if (!visaData[selectedCountry][category]) {
         visaData[selectedCountry][category] = [];
-        saveDataToFirebase(visaData);
+        saveData(visaData);
         selectedCategory = category;
         renderAll();
         document.getElementById('categorySearch').value = '';
@@ -931,10 +865,6 @@ window.showCategorySelector = function() {
 }
 
 window.showDocumentSelector = function() {
-  if (!isConnected) {
-    alert('Please wait for Firebase connection.');
-    return;
-  }
   if (!selectedCountry || !selectedCategory) {
     alert('Please select a country and category first.');
     return;
@@ -961,7 +891,7 @@ window.showDocumentSelector = function() {
         translation: prompt("Translation (Yes/No):") || "No"
       };
       visaData[selectedCountry][selectedCategory].push(newDoc);
-      saveDataToFirebase(visaData);
+      saveData(visaData);
       renderDocs();
       renderCategories();
       document.getElementById('documentSearch').value = '';
@@ -1064,7 +994,7 @@ function renderCountries() {
     const reordered = {};
     keys.forEach(key => { reordered[key] = visaData[key]; });
     visaData = reordered;
-    saveDataToFirebase(visaData);
+    saveData(visaData);
     renderAll();
   });
 }
@@ -1114,7 +1044,7 @@ function renderCategories() {
     const reordered = {};
     keys.forEach(key => { reordered[key] = visaData[selectedCountry][key]; });
     visaData[selectedCountry] = reordered;
-    saveDataToFirebase(visaData);
+    saveData(visaData);
     renderAll();
   });
 }
@@ -1160,7 +1090,6 @@ function renderDocs() {
   `;
   docsDiv.innerHTML = html;
   
-  // Setup drag and drop for document rows
   const tbody = docsDiv.querySelector('tbody');
   if (!tbody) return;
   
@@ -1209,7 +1138,7 @@ function renderDocs() {
         const docsArray = visaData[selectedCountry][selectedCategory];
         const [moved] = docsArray.splice(fromIndex, 1);
         docsArray.splice(toIndex, 0, moved);
-        saveDataToFirebase(visaData);
+        saveData(visaData);
         renderDocs();
       }
     }
@@ -1256,14 +1185,10 @@ window.resetAll = function() {
 }
 
 window.clearAllData = function() {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
-  if (!confirm('⚠️ This will permanently delete ALL data from Firebase. Are you sure?')) return;
-  if (!confirm('Really? All countries, categories, and documents will be gone for everyone.')) return;
+  if (!confirm('⚠️ This will permanently delete ALL data. Are you sure?')) return;
+  if (!confirm('Really? All countries, categories, and documents will be gone.')) return;
   visaData = {};
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   selectedCountry = null;
   selectedCategory = null;
   renderAll();
@@ -1271,13 +1196,9 @@ window.clearAllData = function() {
 
 // ---------- CRUD: COUNTRY ----------
 window.deleteCountry = function(country) {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
   if (!confirm(`Delete country "${country}" and all its data?`)) return;
   delete visaData[country];
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   if (selectedCountry === country) {
     selectedCountry = null;
     selectedCategory = null;
@@ -1286,10 +1207,6 @@ window.deleteCountry = function(country) {
 }
 
 window.editCountryName = function(oldName) {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
   const newName = prompt("Rename country to:", oldName);
   if (!newName) return;
   const trimmed = newName.trim();
@@ -1300,30 +1217,22 @@ window.editCountryName = function(oldName) {
   }
   visaData[trimmed] = visaData[oldName];
   delete visaData[oldName];
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   if (selectedCountry === oldName) selectedCountry = trimmed;
   renderAll();
 }
 
 // ---------- CRUD: CATEGORY ----------
 window.deleteCategory = function(cat) {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
   if (!selectedCountry) return;
   if (!confirm(`Delete category "${cat}" from ${selectedCountry}?`)) return;
   delete visaData[selectedCountry][cat];
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   if (selectedCategory === cat) selectedCategory = null;
   renderAll();
 }
 
 window.editCategoryName = function(oldName) {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
   if (!selectedCountry) return;
   const newName = prompt("Rename category to:", oldName);
   if (!newName) return;
@@ -1335,32 +1244,24 @@ window.editCategoryName = function(oldName) {
   }
   visaData[selectedCountry][trimmed] = visaData[selectedCountry][oldName];
   delete visaData[selectedCountry][oldName];
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   if (selectedCategory === oldName) selectedCategory = trimmed;
   renderAll();
 }
 
 // ---------- CRUD: DOCUMENT ----------
 window.deleteDocument = function(index) {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
   if (!selectedCountry || !selectedCategory) return;
   const docs = visaData[selectedCountry][selectedCategory];
   if (index < 0 || index >= docs.length) return;
   if (!confirm(`Delete "${docs[index].name}" ?`)) return;
   docs.splice(index, 1);
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   renderDocs();
   renderCategories();
 }
 
 window.editDocument = function(index) {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
   if (!selectedCountry || !selectedCategory) return;
   const docs = visaData[selectedCountry][selectedCategory];
   const doc = docs[index];
@@ -1383,16 +1284,12 @@ window.editDocument = function(index) {
     apostille: newApostille.trim() || doc.apostille,
     translation: newTranslation.trim() || doc.translation
   };
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   renderDocs();
   renderCategories();
 }
 
 window.addNewDocument = function() {
-  if (!isConnected) {
-    alert('Not connected to Firebase. Please wait.');
-    return;
-  }
   if (!selectedCountry || !selectedCategory) {
     alert("Please select a country and category first.");
     return;
@@ -1410,7 +1307,7 @@ window.addNewDocument = function() {
     apostille: apostille.trim(),
     translation: translation.trim()
   });
-  saveDataToFirebase(visaData);
+  saveData(visaData);
   renderDocs();
   renderCategories();
 }
@@ -1505,26 +1402,18 @@ function renderAll() {
 }
 
 // ---------- INIT ----------
-// Load data from Firebase with optimized connection
-loadDataFromFirebase();
+renderAll();
 
 // Keyboard: Escape = home or close modal
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (modal.classList.contains('active')) {
       window.closeModal();
-    } else {
-      window.resetAll();
     }
   }
 });
 
-// Make functions available globally
-window.visaData = visaData;
-window.saveDataToFirebase = saveDataToFirebase;
-window.renderAll = renderAll;
-
-console.log('✅ Firebase integration complete! Data is now shared across all devices.');
+console.log('✅ JSON mode active! Data is stored in localStorage.');
 </script>
 </body>
 </html>
