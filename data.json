@@ -1,0 +1,17 @@
+{
+  "Germany": {
+    "Tourist Visa": [
+      { "name": "Passport Copy", "validity": "6 months", "mofa": "No", "apostille": "No", "translation": "No" },
+      { "name": "Bank Statement", "validity": "3 months", "mofa": "No", "apostille": "No", "translation": "No" }
+    ],
+    "Business Visa": [
+      { "name": "Invitation Letter", "validity": "3 months", "mofa": "Yes", "apostille": "No", "translation": "Yes" }
+    ]
+  },
+  "Canada": {
+    "Tourist Visa": [
+      { "name": "Passport Copy", "validity": "6 months", "mofa": "No", "apostille": "No", "translation": "No" },
+      { "name": "Bank Statement", "validity": "3 months", "mofa": "No", "apostille": "No", "translation": "No" }
+    ]
+  }
+}
