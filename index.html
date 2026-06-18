@@ -511,7 +511,7 @@ const app = initializeApp(FIREBASE_CONFIG);
 const db = getDatabase(app);
 
 // Optional: Set database URL explicitly for faster connection
-// const db = getDatabase(app, "https://fvic-visa-checklist-default-rtdb.firebaseio.com/");
+const db = getDatabase(app, "https://fvic-visa-checklist-default-rtdb.firebaseio.com/");
 
 const visaDataRef = ref(db, 'visaData');
 
